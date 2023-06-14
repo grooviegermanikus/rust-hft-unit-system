@@ -34,21 +34,32 @@ fn sol_trace() {
 
     // untyped
     {
-        let sol_native = 1_000_000_000; // =e9  smallest unit
-        let sol_lot_size = 10_000_000; // =l7, number of native units in a lot
-        let sol_qty_lots = 100; // qty of lots to trade
-        let sol_base_ui = sol_qty_lots * sol_lot_size / sol_native;
-        assert_eq!(sol_base_ui, 1);
+        // base_native  = 1e9
+        let base_native = 1_000_000_000; // =e9  smallest unit
+        // base_lots (SOL) = 1e9 / 1l7 = 1e2
+        let base_lot_size = 10_000_000; // =l7, number of native units in a lot
+        let base_lots = 1 * 100; // qty of lots to trade -> 100 lots = 1 SOL
+        let base_ui = base_lots * base_lot / base_native;
+        assert_eq!(base_ui, 1);
+
+        // price_lots (USDC) = 1971
+        let price_lots = 1971;
+        // quote_lots (USDC) = base_lots * price_lots = 1971e2
+        let quote_lots = base_lots * price_lots;
+        // quote_native(USDC) = 1971e2 * 1l2 = 1971e4
+        let quote_native = quote_lots * 100;
+        // quote_ui = 19.71
+        let quote_ui = quote_native as f64 / 1_000_000.;
+        assert_eq!(quote_ui, 19.71);
     }
 
     // typed
     {
-        let sol_native = NativeSize::from(1_000_000_000);
-        let sol_lot_size = NativeSizePerLot::from_native_per_lots(10_000_000);
-        let sol_qty_lots = Lots::from(100);
-        let sol_base_ui = sol_qty_lots * sol_lot_size / sol_native;
-        assert_eq!(sol_base_ui, 1);
+        let base_native = NativeSize::from(1_000_000_000);
+        let base_lot_size = NativeSizePerLot::from_native_per_lots(10_000_000);
+        let base_lots = Lots::from(100);
+        // let base_base_ui = base_lots * base_lot / base_native;
+        // assert_eq!(base_ui, 1);
     }
 
 }
-

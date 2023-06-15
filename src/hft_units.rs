@@ -1,37 +1,187 @@
-pub use self::f64consts::*;
+#[warn(unused_imports)]
 
-// pub trait Price: Dimensioned {}
-// pub trait Size: Dimensioned {}
-// pub trait Notional: Dimensioned {}
+use core::fmt;
 
-// dimensions
-// pub trait Quantity: Dimensioned {}
-// pub trait Money: Dimensioned {}
+use core::ops::Add;
+use core::ops::Sub;
+use core::ops::Mul;
+use core::ops::Div;
+use core::cmp::PartialEq;
+use std::marker::PhantomData;
+use fixed::types::I80F48;
 
-
-make_units! {
-    HFT; // name of unit system
-    ONE: Unitless;
-    base {
-        // PRICE: Price, "price", Money;
-        SIZE: Size, "size";
-        NOTIONAL: Notional, "notional";
-        // M: Meter, "m", Length;
-        // S: Second, "s", Time;
-    }
-    derived {
-        PRICE: Price = (Notional / Size);
-        // MPS: MeterPerSecond = (Meter / Second), Velocity;
-        // HZ: Hertz = (Unitless / Second), Frequency;
-        // M3: Meter3 = (Meter * Meter * Meter), Volume;
-        // M5: Meter5 = (Meter3 * Meter * Meter);
-    }
-    constants {
-        // FT: Meter = 0.3048;
-        // CM: Meter = CENTI * M.value_unsafe;
-        // MIN: Second = 60.0;
-        // HR: Second = 60.0 * MIN.value_unsafe;
-        // PI: Unitless = consts::PI;
-    }
-    fmt = true;
+// TODO derive symbol from S
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct Mint<S> {
+    symbol: &'static str,
+    decimals: u8, // e9
+    _marker: PhantomData<S>,
 }
+
+impl<U> Mint<U> {
+    pub fn new(symbol: &'static str, decimals: u8) -> Self {
+        Mint {
+            symbol: symbol,
+            decimals: decimals,
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn symbol(&self) -> &'static str {
+        self.symbol
+    }
+    pub fn decimals(&self) -> u8 {
+        self.decimals
+    }
+    // TODO rename .. maybe one_in_native, units
+    // is u64 correct?
+    #[deprecated]
+    pub fn unit(&self) -> u64 {
+        10u64.pow(self.decimals as u32)
+    }
+}
+
+
+// TODO define ...
+pub struct Market<B, Q>
+{
+    base_mint: Mint<B>,
+    quote_mint: Mint<Q>,
+    base_lot_size: i64,
+    // Number of quote native in a quote lot. Must be a power of 10.
+    quote_lot_size: i64,
+}
+
+impl<B, Q> Market<B, Q>
+where
+    B: PartialEq + Clone,
+    Q: PartialEq + Clone,
+{
+    pub fn new(
+        base_mint: &Mint<B>, quote_mint: &Mint<Q>,
+        base_lot_size: i64, quote_lot_size: i64,
+    ) -> Self {
+        // TODO assert quote_lot_size is power of 10
+        Market {
+            base_mint: base_mint.clone(),
+            quote_mint: quote_mint.clone(),
+            base_lot_size,
+            quote_lot_size,
+        }
+    }
+    pub fn base_mint(&self) -> &Mint<B> {
+        &self.base_mint
+    }
+    pub fn quote_mint(&self) -> &Mint<Q> {
+        &self.quote_mint
+    }
+
+    // pub fn quote_lot_to_native(&self, quote_lots: i64) -> NativeSize {
+    //     NativeSize {
+    //         amount: I80F48::from_num(quote_lots) * I80F48::from_num(self.quote_lot_size),
+    //     }
+    // }
+
+    // quote_lots == price
+    pub fn quote_lots_to_native(&self, quote_lots: &LotAmount<Q>) -> NativeAmount<Q> {
+        let native = I80F48::from_num(quote_lots.amount) * I80F48::from_num(self.quote_lot_size);
+            // / I80F48::from_num(self.base_lot_size);
+        NativeAmount::from_raw(&self.quote_mint, native)
+    }
+
+    // // quote_native == price
+    // pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
+    //     (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
+    //         .to_num()
+    // }
+
+
+    // amount == lots
+    pub fn from_raw_as_base(&self, amount: i64) -> LotAmount<B> {
+
+        LotAmount {
+            amount: amount,
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn from_raw_as_quote(&self, amount: i64) -> LotAmount<Q> {
+        LotAmount {
+            amount: amount,
+            _marker: PhantomData,
+        }
+    }
+
+
+}
+
+
+/// TODO
+#[derive(PartialEq, Debug, Clone, Copy)]
+// #[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+pub struct NativeAmount<S>
+where S: PartialEq {
+    amount: I80F48,
+    _marker: PhantomData<S>,
+}
+
+
+
+// note: S maybe should be replaced by Mint<S>; ATM this is only guaranteed by the factory method
+impl<S> NativeAmount<S>
+where S: PartialEq {
+
+    pub fn unit_symbol() -> &'static str { "nsz" }
+
+    pub fn unit_name() -> &'static str { "native size" }
+
+    // TODO find better name
+    pub fn from_raw(mint: &Mint<S>, amount: I80F48) -> Self {
+        NativeAmount {
+            amount: amount,
+            _marker: PhantomData,
+        }
+    }
+
+}
+
+impl<S> fmt::Display for NativeAmount<S>
+where S: PartialEq {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO fix fmt of I80F48
+        write!(f, "{:?} {}", &self.amount, Self::unit_symbol())
+    }
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct LotAmount<S>  {
+    // in lots
+    amount: i64,
+    _marker: PhantomData<S>,
+}
+
+impl<S> LotAmount<S> {
+
+    pub fn unit_symbol() -> &'static str { "lots" }
+
+    pub fn unit_name() -> &'static str { "lots" }
+
+    // pub fn to_native(&self, market: &Market<B, Q>) -> I80F48 {
+    //     I80F48::from_num(amount) * I80F48::from_num(market.quote_lot_size)
+    //         / I80F48::from_num(market.base_lot_size)
+    // }
+
+    // // quote_native == price
+    // pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
+    //     (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
+    //         .to_num()
+    // }
+
+}
+
+
+
+// pub fn lot_to_native_price(&self, price: i64) -> I80F48 {
+//     I80F48::from_num(price) * I80F48::from_num(self.quote_lot_size)
+//         / I80F48::from_num(self.base_lot_size)
+// }

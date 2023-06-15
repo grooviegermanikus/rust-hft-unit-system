@@ -1,4 +1,5 @@
 use fixed::types::I80F48;
+use rust_hft_unit_system::hft_units::Mint;
 
 struct MarketConf {
     /// Number of quote native in a quote lot. Must be a power of 10.
@@ -15,6 +16,7 @@ struct MarketConf {
     /// 1_000_000 and base position ui is 1.
     pub base_lot_size: i64,
 }
+
 
 #[test]
 fn price_lot() {
@@ -34,13 +36,14 @@ fn price_lot() {
 
 /// Convert from the price stored on the book to the price used in value calculations
 //
-pub fn lot_to_native_price(&self, price: i64) -> I80F48 {
-    I80F48::from_num(price) * I80F48::from_num(self.quote_lot_size)
-        / I80F48::from_num(self.base_lot_size)
+fn lot_to_native_price(market_conf: &MarketConf, price: i64) -> I80F48 {
+    I80F48::from_num(price) * I80F48::from_num(market_conf.quote_lot_size)
+        / I80F48::from_num(market_conf.base_lot_size)
 }
 
 fn native_price_to_lot(market: &MarketConf, price: I80F48) -> i64 {
     (price * I80F48::from_num(market.base_lot_size) / I80F48::from_num(market.quote_lot_size))
         .to_num()
 }
+
 

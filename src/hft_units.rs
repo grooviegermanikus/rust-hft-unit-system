@@ -82,14 +82,18 @@ where
     //     }
     // }
 
-    // quote_lots == price
+    // quote lots to quote native
     pub fn quote_lots_to_native(&self, quote_lots: &LotAmount<Q>) -> NativeAmount<Q> {
         let native = I80F48::from_num(quote_lots.amount) * I80F48::from_num(self.quote_lot_size);
             // / I80F48::from_num(self.base_lot_size);
         NativeAmount::from_raw(&self.quote_mint, native)
     }
 
-    // // quote_native == price
+    // quote_native * base_lot_size = native_price * quote_lot_size
+    // quote_native / quote_lot_size = native_price / base_lot_size
+    // 19710000 / 100 = native_price / 10_000_000
+    // => native_price = 19710000 * 100_000 = 1971e9
+
     // pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
     //     (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
     //         .to_num()

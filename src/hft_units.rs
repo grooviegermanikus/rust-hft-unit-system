@@ -7,6 +7,7 @@ use core::ops::Sub;
 use core::ops::Mul;
 use core::ops::Div;
 use core::cmp::PartialEq;
+use std::borrow::Borrow;
 use std::marker::PhantomData;
 use fixed::types::I80F48;
 
@@ -39,8 +40,8 @@ impl<U> Mint<U> {
     pub fn unit(&self) -> u64 {
         10u64.pow(self.decimals as u32)
     }
-}
 
+}
 
 // TODO define ...
 pub struct Market<B, Q>
@@ -94,10 +95,11 @@ where
     // 19710000 / 100 = native_price / 10_000_000
     // => native_price = 19710000 * 100_000 = 1971e9
 
-    // pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
-    //     (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
-    //         .to_num()
-    // }
+    // calculate price-native to price-lots
+    pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
+        (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
+            .to_num()
+    }
 
 
     // amount == lots
@@ -125,7 +127,7 @@ where
 // #[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct NativeAmount<S>
 where S: PartialEq {
-    amount: I80F48,
+    amount: I80F48, // TODO this could be u64/i64
     _marker: PhantomData<S>,
 }
 
@@ -139,7 +141,7 @@ where S: PartialEq {
 
     pub fn unit_name() -> &'static str { "native size" }
 
-    // TODO find better name
+    // TODO find better name ('raw' might be misleading)
     pub fn from_raw(mint: &Mint<S>, amount: I80F48) -> Self {
         NativeAmount {
             amount: amount,
@@ -147,6 +149,14 @@ where S: PartialEq {
         }
     }
 
+    pub fn to_ui(&self, mint: &Mint<S>) -> I80F48 {
+        self.amount / I80F48::from_num(mint.unit())
+    }
+
+}
+
+pub fn convert_native_to_ui<S: PartialEq>(native_amount: NativeAmount<S>, mint: &Mint<S>) -> I80F48 {
+    native_amount.to_ui(mint)
 }
 
 impl<S> fmt::Display for NativeAmount<S>
@@ -175,7 +185,6 @@ impl<S> LotAmount<S> {
     //         / I80F48::from_num(market.base_lot_size)
     // }
 
-    // // quote_native == price
     // pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
     //     (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
     //         .to_num()
@@ -183,6 +192,13 @@ impl<S> LotAmount<S> {
 
 }
 
+
+// how to model
+// TODO
+// we need LotPrice and NativePrice
+struct Price {
+
+}
 
 
 // pub fn lot_to_native_price(&self, price: i64) -> I80F48 {

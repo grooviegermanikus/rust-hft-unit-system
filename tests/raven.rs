@@ -1,5 +1,6 @@
+use std::ops::Sub;
 use fixed::types::I80F48;
-use rust_hft_unit_system::hft_units::{LotAmount, Market, Mint, NativeAmount};
+use rust_hft_unit_system::hft_units::{convert_native_to_ui, LotAmount, Market, Mint, NativeAmount};
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 enum BASE {}
@@ -85,10 +86,19 @@ fn sol_trace() {
 
         let _amount: LotAmount<BASE> = market.from_raw_as_base(100); // 1 SOL
         let amountq: LotAmount<QUOTE> = market.from_raw_as_quote(197100); // 19.71 USDC
+        let quote_native: NativeAmount<QUOTE> = market.quote_lots_to_native(&amountq);
 
         assert_eq!(
-            market.quote_lots_to_native(&amountq),
+            quote_native,
             NativeAmount::from_raw(&quote_mint, I80F48::from_num(19_710_000)));
+
+        let quote_ui = quote_native.to_ui(&quote_mint);
+        assert!(quote_ui.sub(I80F48::from_num(19.71)).abs() <= 0.001);
+
+        // supports also a static version of conversion
+        assert_eq!(
+            convert_native_to_ui(quote_native, &quote_mint),
+            quote_native.to_ui(&quote_mint));
 
         // let base_native = NativeSize::from(1_000_000_000);
         // let base_lot_size = NativeSizePerLot::from_native_per_lots(10_000_000);

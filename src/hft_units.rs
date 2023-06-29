@@ -21,6 +21,7 @@ pub struct Mint<S> {
 
 impl<U> Mint<U> {
     pub fn new(symbol: &'static str, decimals: u8) -> Self {
+        assert!(decimals <= 19, "decimals must be <= 19");
         Mint {
             symbol: symbol,
             decimals: decimals,
@@ -35,10 +36,12 @@ impl<U> Mint<U> {
         self.decimals
     }
     // TODO rename .. maybe one_in_native, units
-    // is u64 correct?
-    #[deprecated]
-    pub fn unit(&self) -> u64 {
+    pub fn inverse_unit(&self) -> u64 {
         10u64.pow(self.decimals as u32)
+    }
+
+    pub fn unit(&self) -> I80F48 {
+        I80F48::ONE / I80F48::from_num(self.inverse_unit())
     }
 
 }
@@ -150,7 +153,7 @@ where S: PartialEq {
     }
 
     pub fn to_ui(&self, mint: &Mint<S>) -> I80F48 {
-        self.amount / I80F48::from_num(mint.unit())
+        self.amount.mul(I80F48::from_num(mint.unit()))
     }
 
 }

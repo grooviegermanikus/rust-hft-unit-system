@@ -16,6 +16,27 @@ fn define_mints() {
     let amount1: NativeAmount<BASE> = NativeAmount::from_raw(&base_mint, I80F48::from_num(1212));
     let amount2: NativeAmount<QUOTE> = NativeAmount::from_raw(&quote_mint, I80F48::from_num(1212));
 
+    assert_eq!(quote_mint.unit(), I80F48::from_num(0.000000999999997));
+
+}
+
+#[test]
+fn max_decimals() {
+
+    let mint_max: Mint<QUOTE> = Mint::new("RND", 19);
+    let _ = mint_max.inverse_unit();
+}
+
+
+#[test]
+#[should_panic(expected = "decimals must be <= 19")]
+fn overflow_unit() {
+
+    let mint_max: Mint<QUOTE> = Mint::new("RND", 20);
+    let _ = mint_max.inverse_unit();
+
+    let mint: Mint<QUOTE> = Mint::new("RND", 20);
+    let _ = mint.inverse_unit();
 }
 
 
@@ -79,7 +100,7 @@ fn sol_trace() {
         let quote_mint: Mint<QUOTE> = Mint::new("USDC", 6);
 
         assert_eq!(quote_mint.decimals(), 6);
-        assert_eq!(quote_mint.unit(), 1_000_000);
+
 
         // SOL-PERP
         let market = Market::new(&base_mint, &quote_mint, 10_000_000, 100);

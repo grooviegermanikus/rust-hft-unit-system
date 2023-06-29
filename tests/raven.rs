@@ -88,6 +88,8 @@ fn sol_trace() {
         let amountq: LotAmount<QUOTE> = market.from_raw_as_quote(197100); // 19.71 USDC
         let quote_native: NativeAmount<QUOTE> = market.quote_lots_to_native(&amountq);
 
+        // TODO add price logic
+
         assert_eq!(
             quote_native,
             NativeAmount::from_raw(&quote_mint, I80F48::from_num(19_710_000)));
@@ -100,11 +102,6 @@ fn sol_trace() {
             convert_native_to_ui(quote_native, &quote_mint),
             quote_native.to_ui(&quote_mint));
 
-        // let base_native = NativeSize::from(1_000_000_000);
-        // let base_lot_size = NativeSizePerLot::from_native_per_lots(10_000_000);
-        // let base_lots = Lots::from(100);
-        // let base_base_ui = base_lots * base_lot / base_native;
-        // assert_eq!(base_ui, 1);
     }
 
 }

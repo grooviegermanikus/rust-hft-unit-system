@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dimensioned = { path = "3rdparty/dimensioned" }
+#dimensioned = { path = "3rdparty/dimensioned" }
 fixed = "1.23.1"
 simple-si-units = "1.1.1"

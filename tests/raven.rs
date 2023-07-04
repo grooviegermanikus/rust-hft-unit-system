@@ -125,4 +125,11 @@ fn sol_trace() {
 
     }
 
+    #[test]
+    fn price() {
+        // let limit = (limit_price * base_lot_size / quote_lot_size) as u64;
+        // TODO
+
+    }
+
 }

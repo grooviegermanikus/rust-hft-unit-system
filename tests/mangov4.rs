@@ -43,6 +43,8 @@ fn lot_to_native_price(market_conf: &MarketConf, price: i64) -> I80F48 {
 
 fn native_price_to_lot(market: &MarketConf, price: I80F48) -> i64 {
     (price * I80F48::from_num(market.base_lot_size) / I80F48::from_num(market.quote_lot_size))
+        // TODO consider rounding
+        // .ceil() - see rust-hacking -> rounding()
         .to_num()
 }
 

@@ -130,6 +130,8 @@ fn sol_trace() {
         // let limit = (limit_price * base_lot_size / quote_lot_size) as u64;
         // TODO
 
+        // let max_native_quote_qty_including_fees = (limit_native_price * (max_base_native_qty as f64)) as u64;
+
     }
 
 }

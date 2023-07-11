@@ -10,6 +10,7 @@ use core::cmp::PartialEq;
 use std::borrow::Borrow;
 use std::marker::PhantomData;
 use fixed::types::I80F48;
+use crate::utils::is_valid_lot_size;
 
 // TODO derive symbol from S
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -19,7 +20,7 @@ pub struct Mint<S> {
     _marker: PhantomData<S>,
 }
 
-impl<U> Mint<U> {
+impl<S> Mint<S> {
     pub fn new(symbol: &'static str, decimals: u8) -> Self {
         assert!(decimals <= 19, "decimals must be <= 19");
         Mint {
@@ -65,7 +66,8 @@ where
         base_mint: &Mint<B>, quote_mint: &Mint<Q>,
         base_lot_size: i64, quote_lot_size: i64,
     ) -> Self {
-        // TODO assert quote_lot_size is power of 10
+        assert!(is_valid_lot_size(base_lot_size));
+        assert!(is_valid_lot_size(quote_lot_size));
         Market {
             base_mint: base_mint.clone(),
             quote_mint: quote_mint.clone(),
@@ -99,9 +101,17 @@ where
     // => native_price = 19710000 * 100_000 = 1971e9
 
     // calculate price-native to price-lots
-    pub fn native_price_to_lot(&self, quote_native: I80F48) -> i64 {
-        (quote_native * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
-            .to_num()
+    pub fn native_price_to_lot(&self, native_price: NativePrice) -> LotPrice<B,Q> {
+        let lot_price = self.native_price_to_lot_raw(native_price.native_price);
+        LotPrice {
+            amount: lot_price,
+            _marker: PhantomData,
+        }
+    }
+
+    fn native_price_to_lot_raw(&self, native_price: I80F48) -> i64 {
+       (native_price * I80F48::from_num(self.base_lot_size) / I80F48::from_num(self.quote_lot_size))
+        .to_num()
     }
 
 
@@ -162,14 +172,6 @@ pub fn convert_native_to_ui<S: PartialEq>(native_amount: NativeAmount<S>, mint: 
     native_amount.to_ui(mint)
 }
 
-impl<S> fmt::Display for NativeAmount<S>
-where S: PartialEq {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO fix fmt of I80F48
-        write!(f, "{:?} {}", &self.amount, Self::unit_symbol())
-    }
-}
-
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct LotAmount<S>  {
     // in lots
@@ -202,12 +204,79 @@ impl<S> LotAmount<S> {
 //
 // Amt<B> * Price<B,Q> = Amt<Q>
 // native_price_to_lot : LotPrice<B,Q>
-struct Price {
-
+/// amount of quote lots that can buy 1 base lot
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct LotPrice<B, Q> {
+    // in lots
+    amount: i64,
+    _marker: PhantomData<(B, Q)>,
 }
 
+impl<B, Q> LotPrice<B, Q>
+    where B: PartialEq,
+          Q: PartialEq {
+
+    pub fn unit_symbol() -> &'static str { "lotpc" }
+
+    pub fn unit_name() -> &'static str { "lot price" }
+
+    // TODO find better name ('raw' might be misleading)
+    pub fn from_raw(amount: i64) -> Self {
+        LotPrice {
+            amount: amount,
+            _marker: PhantomData,
+        }
+    }
+
+}
 
 // pub fn lot_to_native_price(&self, price: i64) -> I80F48 {
 //     I80F48::from_num(price) * I80F48::from_num(self.quote_lot_size)
 //         / I80F48::from_num(self.base_lot_size)
 // }
+
+/// quote natives divided by base natives
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct NativePrice {
+    native_price: I80F48,
+}
+
+
+impl NativePrice{
+    pub fn unit_symbol() -> &'static str { "natpc" }
+
+    pub fn unit_name() -> &'static str { "native price" }
+
+    // TODO find better name ('raw' might be misleading)
+    pub fn from_raw(native_price: I80F48) -> Self {
+        NativePrice {
+            native_price: native_price,
+        }
+    }
+}
+
+
+impl<S> fmt::Display for NativeAmount<S>
+    where S: PartialEq {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO fix fmt of I80F48
+        write!(f, "{:?} {}", &self.amount, Self::unit_symbol())
+    }
+}
+
+
+impl fmt::Display for NativePrice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO fix fmt of I80F48
+        write!(f, "{:?} {}", &self.native_price, Self::unit_symbol())
+    }
+}
+
+impl<B, Q> fmt::Display for LotPrice<B, Q>
+    where B: PartialEq,
+          Q: PartialEq {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO fix fmt of I80F48
+        write!(f, "{:?} {}", &self.amount, Self::unit_symbol())
+    }
+}

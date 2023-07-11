@@ -1,6 +1,6 @@
-use std::ops::Sub;
+use std::ops::{Index, Sub};
 use fixed::types::I80F48;
-use rust_hft_unit_system::hft_units::{convert_native_to_ui, LotAmount, Market, Mint, NativeAmount};
+use rust_hft_unit_system::hft_units::{convert_native_to_ui, LotAmount, LotPrice, Market, Mint, NativeAmount, NativePrice};
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 enum BASE {}
@@ -125,13 +125,29 @@ fn sol_trace() {
 
     }
 
-    #[test]
-    fn price() {
-        // let limit = (limit_price * base_lot_size / quote_lot_size) as u64;
-        // TODO
+}
 
-        // let max_native_quote_qty_including_fees = (limit_native_price * (max_base_native_qty as f64)) as u64;
+#[test]
+fn price() {
+    let base_mint: Mint<BASE> = Mint::new("SOL", 9);
+    let quote_mint: Mint<QUOTE> = Mint::new("USDC", 6);
+    let market = Market::new(&base_mint, &quote_mint, 10_000_000, 100);
 
-    }
+    let native_price: NativePrice = NativePrice::from_raw(I80F48::from_num(0.01971));
+    assert_eq!(native_price.to_string(), "0.01971 natpc");
+
+    let lot_price: LotPrice<BASE, QUOTE> = market.native_price_to_lot(native_price);
+    // FIXME
+    // assert_eq!(lot_price.to_string(), "1971 lotpc");
+
+
+
+
+    // limit_price: NativePrice
+    // let limit: LotPrice = (limit_price * base_lot_size / quote_lot_size) as u64;
+    // TODO
+
+    // let max_native_quote_qty_including_fees = (limit_native_price * (max_base_native_qty as f64)) as u64;
 
 }
+

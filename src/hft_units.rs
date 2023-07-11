@@ -199,6 +199,9 @@ impl<S> LotAmount<S> {
 // how to model
 // TODO
 // we need LotPrice and NativePrice
+//
+// Amt<B> * Price<B,Q> = Amt<Q>
+// native_price_to_lot : LotPrice<B,Q>
 struct Price {
 
 }
